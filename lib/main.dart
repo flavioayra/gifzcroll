@@ -42,6 +42,7 @@ class _HomePageState extends State<HomePage> {
   List<String> imgs = new List();
   ScrollController _scrollController = new ScrollController();
   bool isPerformingRequest = false;
+  bool isSharing = false;
   String mood = "funny";
   var listViewKey = RectGetter.createGlobalKey();
   var _keys = {};
@@ -130,17 +131,32 @@ class _HomePageState extends State<HomePage> {
           SpeedDialChild(
             child: Icon(Icons.accessibility_new, color: Colors.white),
             backgroundColor: Colors.black,
-            onTap: () => setMood("excited"),
+            onTap: () => setMood("excited+funny"),
           ),
           SpeedDialChild(
             child: Icon(CustomIcons.iconfinder_middle_finger_gesture_fuck_339875, color: Colors.white),
             backgroundColor: Colors.black,
-            onTap: () => setMood("fuck"),
+            onTap: () => setMood("fuck+funny"),
           ),
           SpeedDialChild(
             child: Icon(Icons.beach_access, color: Colors.white),
             backgroundColor: Colors.black,
-            onTap: () => setMood("beach")
+            onTap: () => setMood("beach+funny")
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.audiotrack, color: Colors.white),
+            backgroundColor: Colors.black,
+            onTap: () => setMood("dance+funny"),
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.child_care, color: Colors.white),
+            backgroundColor: Colors.black,
+            onTap: () => setMood("kids+funny"),
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.directions_bike, color: Colors.white),
+            backgroundColor: Colors.black,
+            onTap: () => setMood("bikes+funny"),
           ),
         ],
       )
@@ -157,16 +173,19 @@ class _HomePageState extends State<HomePage> {
   }
 
   shareImage(url) async {
-    var request = await HttpClient().getUrl(Uri.parse(url));
-    var response = await request.close();
-    Uint8List bytes = await consolidateHttpClientResponseBytes(response);
-    await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
+    if (!isSharing) {
+      setState(() => isPerformingRequest = true);
+      var request = await HttpClient().getUrl(Uri.parse(url));
+      var response = await request.close();
+      Uint8List bytes = await consolidateHttpClientResponseBytes(response);
+      await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
+      setState(() => isPerformingRequest = false);
+    }
   }
 
   setMood(newMood) {
     setState(() => mood = newMood);
 
-    print(mood);
     // Get last visible listItem (clean array after)
     var rect = RectGetter.getRectFromKey(listViewKey);
     int lastItem = 0;
@@ -182,51 +201,45 @@ class _HomePageState extends State<HomePage> {
 
   fetchGifs() async {
 
+    if (!isPerformingRequest) {
+      setState(() => isPerformingRequest = true);
+      mood = mood.split('+')[0];
+      var endpoint = 'https://api.tenor.com/v1/random?q=${mood}&key=LIVDSRZULELA&limit=0&media_filter=minimal&contentfilter=off&anon_id=3a76e56901d740da9e59ffb22b988242';
+      print(endpoint);
+      final response = await http.get(endpoint);
+      if (response.statusCode == 200) {
+        List results = json.decode(response.body)['results'];
+
+        for (var i = 0; i < results.length; i++) {
+          print(results[i]['media'][0]['gif']['url']);
+          setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
+        }
+        setState(() => isPerformingRequest = false);
+      } else {
+        setState(() => isPerformingRequest = false);
+        throw Exception('Ooops. no imgs');
+      }
+    }
+
     // if (!isPerformingRequest) {
     //   setState(() => isPerformingRequest = true);
 
-    //   var endpoint = 'https://api.tenor.com/v1/random?q=${mood}&key=LIVDSRZULELA&limit=10&media_filter=minimal&anon_id=3a76e56901d740da9e59ffb22b988242';
-    //   final response = await http.get(endpoint);
-    //   if (response.statusCode == 200) {
-    //     List results = json.decode(response.body)['results'];
+    //   final gifs = await client.search(mood,
+    //     offset: 0,
+    //     limit: 50,
+    //     rating: GiphyRating.r,
+    //   );
 
-    //     for (var i = 0; i < results.length; i++) {
-    //       print(results[i]['media'][0]['gif']['url']);
-    //       setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
+    //   if (gifs != null) {
+    //     for (var i = 0; i < gifs.data.length; i++) {
+    //       var url = gifs.data[i].images.original.url;
+    //       print(url);
+
+    //       setState(() => imgs.add(url));
     //     }
-    //     setState(() => isPerformingRequest = false);
-    //   } else {
-    //     setState(() => isPerformingRequest = false);
-    //     throw Exception('Ooops. no imgs');
     //   }
-    // }
-
-    if (!isPerformingRequest) {
-      setState(() => isPerformingRequest = true);
-
-      print("dentro: ${mood}");
-
-      final gifs = await client.search(mood,
-        offset: 0,
-        limit: 50,
-        rating: GiphyRating.r,
-      );
-
-      print(gifs);
-
-      if (gifs != null) {
-        for (var i = 0; i < gifs.data.length; i++) {
-          var url = gifs.data[i].images.original.url;
-          print(url);
-
-          setState(() => imgs.add(url));
-        }
-      }
       
-      print("fim");
-      setState(() => isPerformingRequest = false);
-    } else {
-      print("already running");
-    }
+    //   setState(() => isPerformingRequest = false);
+    // } 
   }
 }
