@@ -181,7 +181,7 @@ class _HomePageState extends State<HomePage> {
         curve: Curves.bounceIn,
         children: [
           SpeedDialChild(
-            child: Icon(Icons.accessibility_new, color: Colors.white),
+            // child: Icon(Icons.accessibility_new, color: Colors.white),
             label: "giphy",
             backgroundColor: Colors.black,
             onTap: () => setState(() => source = "giphy"),
