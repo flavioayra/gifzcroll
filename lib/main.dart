@@ -11,8 +11,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:rect_getter/rect_getter.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:giphy_client/giphy_client.dart';
-
-
+import 'package:cached_network_image/cached_network_image.dart';
 
 
 void main() => runApp(Gifzcroll());
@@ -44,6 +43,7 @@ class _HomePageState extends State<HomePage> {
   bool isPerformingRequest = false;
   bool isSharing = false;
   String mood = "funny";
+  String source = "tenor";
   var listViewKey = RectGetter.createGlobalKey();
   var _keys = {};
 //  final client = new GiphyClient(apiKey: '92BHZL1aODZwWOtLQRAdkYVq8aO6V0dj');
@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
 
     _scrollController.addListener(() {
       // Fetch more if in the middle of the shit
-      if ((_scrollController.position.maxScrollExtent-_scrollController.position.pixels) < 1000) {
+      if ((_scrollController.position.maxScrollExtent-_scrollController.position.pixels) < 1500) {
         fetchGifs();
       }
     });
@@ -105,9 +105,14 @@ class _HomePageState extends State<HomePage> {
                     shareImage(imgs[index]);
                   },
                   child: FadeInImage.memoryNetwork(
+                    fadeInDuration: Duration(milliseconds: 0),
                     placeholder: kTransparentImage,
                     image: imgs[index], fit: BoxFit.fitWidth
                   ),
+                  // child: CachedNetworkImage(
+                  //   // placeholder: (context, url) => new Placeholder(),
+                  //   imageUrl: imgs[index], fit: BoxFit.fitWidth
+                  // ),
                 ),
               ),
             );
@@ -117,7 +122,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget buildSpeedDial() {
+  Widget buildSpeedDialMood() {
     return Opacity(
       opacity: 0.8,
       child: new SpeedDial(
@@ -163,12 +168,51 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget buildSpeedDialSource() {
+    return Opacity(
+      opacity: 0.8,
+      child: new SpeedDial(
+        animatedIcon: AnimatedIcons.view_list,
+        overlayColor: Colors.black,
+        overlayOpacity: 0.3,
+        marginRight: 80,
+        backgroundColor: Colors.black,
+        visible: true,
+        curve: Curves.bounceIn,
+        children: [
+          SpeedDialChild(
+            child: Icon(Icons.accessibility_new, color: Colors.white),
+            label: "giphy",
+            backgroundColor: Colors.black,
+            onTap: () => setState(() => source = "giphy"),
+          ),
+          SpeedDialChild(
+            // child: Icon(CustomIcons.iconfinder_middle_finger_gesture_fuck_339875, color: Colors.white),
+            label: "tenor",
+            backgroundColor: Colors.black,
+            onTap: () => setState(() => source = "tenor"),
+          ),
+        ],
+      )
+    );
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
 
       body: buildBody(),
-      floatingActionButton: buildSpeedDial(),
+      floatingActionButton: Stack(
+        children: <Widget>[
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: buildSpeedDialMood(),
+          ),
+          Align(
+            alignment: Alignment.bottomRight,
+            child: buildSpeedDialSource(),
+          ),
+        ],
+      )
     );
   }
 
@@ -195,7 +239,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     // Remove last visible +2 itens em fetch again
-    imgs.removeRange(lastItem+2, imgs.length);
+    if (imgs != null && imgs.length > lastItem+4) {
+      imgs.removeRange(lastItem+4, imgs.length);
+    }
     fetchGifs();
   }
 
@@ -203,43 +249,42 @@ class _HomePageState extends State<HomePage> {
 
     if (!isPerformingRequest) {
       setState(() => isPerformingRequest = true);
-      mood = mood.split('+')[0];
-      var endpoint = 'https://api.tenor.com/v1/random?q=${mood}&key=LIVDSRZULELA&limit=0&media_filter=minimal&contentfilter=off&anon_id=3a76e56901d740da9e59ffb22b988242';
-      print(endpoint);
-      final response = await http.get(endpoint);
-      if (response.statusCode == 200) {
-        List results = json.decode(response.body)['results'];
 
-        for (var i = 0; i < results.length; i++) {
-          print(results[i]['media'][0]['gif']['url']);
-          setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
-        }
-        setState(() => isPerformingRequest = false);
+      if (source == "tenor") {
+        
+        mood = mood.split('+')[0];
+        var endpoint = 'https://api.tenor.com/v1/random?q=${mood}&key=LIVDSRZULELA&limit=10&media_filter=minimal&contentfilter=off&anon_id=3a76e56901d740da9e59ffb22b988242';
+        print(endpoint);
+        final response = await http.get(endpoint);
+        if (response.statusCode == 200) {
+          List results = json.decode(response.body)['results'];
+
+          for (var i = 0; i < results.length; i++) {
+            print(results[i]['media'][0]['gif']['url']);
+            setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
+          }
+
+        } 
+
       } else {
-        setState(() => isPerformingRequest = false);
-        throw Exception('Ooops. no imgs');
+        final gifs = await client.search(mood,
+          offset: 0,
+          limit: 10,
+          rating: GiphyRating.r,
+        );
+
+        if (gifs != null) {
+          for (var i = 0; i < gifs.data.length; i++) {
+            var url = gifs.data[i].images.original.url;
+            print(url);
+
+            setState(() => imgs.add(url));
+          }
+        }
       }
+
+       setState(() => isPerformingRequest = false);
     }
 
-    // if (!isPerformingRequest) {
-    //   setState(() => isPerformingRequest = true);
-
-    //   final gifs = await client.search(mood,
-    //     offset: 0,
-    //     limit: 50,
-    //     rating: GiphyRating.r,
-    //   );
-
-    //   if (gifs != null) {
-    //     for (var i = 0; i < gifs.data.length; i++) {
-    //       var url = gifs.data[i].images.original.url;
-    //       print(url);
-
-    //       setState(() => imgs.add(url));
-    //     }
-    //   }
-      
-    //   setState(() => isPerformingRequest = false);
-    // } 
   }
 }
