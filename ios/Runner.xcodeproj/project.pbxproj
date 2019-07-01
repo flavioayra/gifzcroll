@@ -228,7 +228,7 @@
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/FMDB/FMDB.framework",
-				"${PODS_ROOT}/../.symlinks/flutter/ios/Flutter.framework",
+				"${PODS_ROOT}/../.symlinks/flutter/ios-release/Flutter.framework",
 				"${BUILT_PRODUCTS_DIR}/esys_flutter_share/esys_flutter_share.framework",
 				"${BUILT_PRODUCTS_DIR}/image_picker_saver/image_picker_saver.framework",
 				"${BUILT_PRODUCTS_DIR}/path_provider/path_provider.framework",
