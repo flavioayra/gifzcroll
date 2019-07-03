@@ -275,7 +275,7 @@ class _HomePageState extends State<HomePage> {
       showDialog (
         context: context,
         barrierDismissible: false,
-        child: new Center(
+        builder: (_) => new Center(
           child: new CircularProgressIndicator(),
           ),
       );
