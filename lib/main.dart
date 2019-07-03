@@ -18,7 +18,6 @@ void main() => runApp(Gifzcroll());
 class Gifzcroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    
     // hide status bar
     SystemChrome.setEnabledSystemUIOverlays([]);
 
@@ -57,7 +56,10 @@ class _HomePageState extends State<HomePage> {
     fetchGifs();
 
     _scrollController.addListener(() {
-      if ((_scrollController.position.maxScrollExtent-_scrollController.position.pixels) < 1500) {
+      if (!isPerformingRequest &&
+          (_scrollController.position.maxScrollExtent -
+                  _scrollController.position.pixels) <
+              1500) {
         fetchGifs();
       }
     });
@@ -86,7 +88,6 @@ class _HomePageState extends State<HomePage> {
     return RectGetter(
       key: listViewKey,
       child: ListView.builder(
-
         // FUCK YOU STATUS BAR
         padding: EdgeInsets.zero,
 
@@ -102,8 +103,8 @@ class _HomePageState extends State<HomePage> {
               key: _keys[index],
               child: Container(
                 child: GestureDetector(
-                  onTap: () { 
-                    shareImage(imgs[index]);
+                  onTap: () {
+                    shareGif(imgs[index]);
                   },
                   // child: FadeInImage.memoryNetwork(
                   //   fadeInDuration: Duration(milliseconds: 0),
@@ -111,118 +112,115 @@ class _HomePageState extends State<HomePage> {
                   //   image: imgs[index], fit: BoxFit.fitWidth
                   // ),
                   child: CachedNetworkImage(
-                    // placeholder: (context, url) => new Placeholder(),
-                    imageUrl: imgs[index], fit: BoxFit.fitWidth
-                  ),
+                      // placeholder: (context, url) => new Placeholder(),
+                      imageUrl: imgs[index],
+                      fit: BoxFit.fitWidth),
                 ),
               ),
             );
           }
         },
-      ), 
+      ),
     );
   }
 
   Widget buildSpeedDialMood() {
     return Opacity(
-      opacity: 0.8,
-      child: new SpeedDial(
-        animatedIcon: AnimatedIcons.menu_close,
-        overlayColor: Colors.black,
-        overlayOpacity: 0.3,
-        backgroundColor: Colors.black,
-        visible: true,
-        curve: Curves.bounceIn,
-        children: [
-          SpeedDialChild(
-            child: Icon(Icons.accessibility_new, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => setMood("excited+funny"),
-          ),
-          SpeedDialChild(
-            child: Icon(CustomIcons.iconfinder_middle_finger_gesture_fuck_339875, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => setMood("fuck+funny"),
-          ),
-          SpeedDialChild(
-            child: Icon(Icons.beach_access, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => setMood("beach+funny")
-          ),
-          SpeedDialChild(
-            child: Icon(Icons.audiotrack, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => setMood("dance+funny"),
-          ),
-          SpeedDialChild(
-            child: Icon(Icons.child_care, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => setMood("kids+funny"),
-          ),
-          SpeedDialChild(
-            child: Icon(Icons.directions_bike, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => setMood("bikes+funny"),
-          ),
-          SpeedDialChild(
-            child: Icon(Icons.add, color: Colors.white),
-            backgroundColor: Colors.black,
-            onTap: () => showMoodText(),
-          ),
-        ],
-      )
-    );
+        opacity: 0.8,
+        child: new SpeedDial(
+          animatedIcon: AnimatedIcons.menu_close,
+          overlayColor: Colors.black,
+          overlayOpacity: 0.3,
+          backgroundColor: Colors.black,
+          visible: true,
+          curve: Curves.bounceIn,
+          children: [
+            SpeedDialChild(
+              child: Icon(Icons.accessibility_new, color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => setMood("excited+funny"),
+            ),
+            SpeedDialChild(
+              child: Icon(
+                  CustomIcons.iconfinder_middle_finger_gesture_fuck_339875,
+                  color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => setMood("fuck+funny"),
+            ),
+            SpeedDialChild(
+                child: Icon(Icons.beach_access, color: Colors.white),
+                backgroundColor: Colors.black,
+                onTap: () => setMood("beach+funny")),
+            SpeedDialChild(
+              child: Icon(Icons.audiotrack, color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => setMood("dance+funny"),
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.child_care, color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => setMood("kids+funny"),
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.directions_bike, color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => setMood("bikes+funny"),
+            ),
+            SpeedDialChild(
+              child: Icon(Icons.add, color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => showMoodText(),
+            ),
+          ],
+        ));
   }
 
   Widget buildSpeedDialSource() {
     return Opacity(
-      opacity: 0.8,
-      child: new SpeedDial(
-        animatedIcon: AnimatedIcons.view_list,
-        overlayColor: Colors.black,
-        overlayOpacity: 0.3,
-        marginRight: 80,
-        backgroundColor: Colors.black,
-        visible: true,
-        curve: Curves.bounceIn,
-        children: [
-          SpeedDialChild(
-            label: "giphy",
-            backgroundColor: Colors.black,
-            onTap: () => setSource("giphy"),
-          ),
-          SpeedDialChild(
-            label: "tenor",
-            backgroundColor: Colors.black,
-            onTap: () => setSource("tenor"),
-          ),
-        ],
-      )
-    );
+        opacity: 0.8,
+        child: new SpeedDial(
+          animatedIcon: AnimatedIcons.view_list,
+          overlayColor: Colors.black,
+          overlayOpacity: 0.3,
+          marginRight: 80,
+          backgroundColor: Colors.black,
+          visible: true,
+          curve: Curves.bounceIn,
+          children: [
+            SpeedDialChild(
+              label: "giphy",
+              backgroundColor: Colors.black,
+              onTap: () => setSource("giphy"),
+            ),
+            SpeedDialChild(
+              label: "tenor",
+              backgroundColor: Colors.black,
+              onTap: () => setSource("tenor"),
+            ),
+          ],
+        ));
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      body: buildBody(),
-      floatingActionButton: Stack(
-        children: <Widget>[
-          Align(
-            alignment: Alignment.bottomLeft,
-            child: buildSpeedDialMood(),
-          ),
-          Align(
-            alignment: Alignment.bottomRight,
-            child: buildSpeedDialSource(),
-          ),
-        ],
-      )
-    );
+        body: buildBody(),
+        floatingActionButton: Stack(
+          children: <Widget>[
+            Align(
+              alignment: Alignment.bottomLeft,
+              child: buildSpeedDialMood(),
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: buildSpeedDialSource(),
+            ),
+          ],
+        ));
   }
 
-  textOverlay() {
-
-   return Center(
+  Widget textOverlay() {
+    return Center(
       child: Container(
         constraints: BoxConstraints(maxWidth: 200, maxHeight: 200),
         child: FocusScope(
@@ -238,7 +236,7 @@ class _HomePageState extends State<HomePage> {
                     fillColor: Colors.black,
                     filled: true,
                     border: new OutlineInputBorder(
-                          borderSide: new BorderSide(),
+                      borderSide: new BorderSide(),
                     ),
                   ),
                   style: new TextStyle(
@@ -251,35 +249,50 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-   );
+    );
   }
 
-  showMoodText() {
+  void showMoodText() {
     if (moodTextBox == null) {
-      moodTextBox = new OverlayEntry(builder: (BuildContext context) => textOverlay());
+      moodTextBox =
+          new OverlayEntry(builder: (BuildContext context) => textOverlay());
       Overlay.of(context).insert(moodTextBox);
     }
   }
 
-  setMoodFromText(mood) {
+  void setMoodFromText(mood) {
     moodTextBox.remove();
     moodTextBox = null;
 
     setMood(mood);
   }
 
-  shareImage(url) async {
+  Future<void> shareGif(url) async {
     if (!isSharing) {
+
       setState(() => isPerformingRequest = true);
+
+      showDialog (
+        context: context,
+        barrierDismissible: false,
+        child: new Center(
+          child: new CircularProgressIndicator(),
+          ),
+      );
+  
+      
       var request = await HttpClient().getUrl(Uri.parse(url));
       var response = await request.close();
       Uint8List bytes = await consolidateHttpClientResponseBytes(response);
+
+       Navigator.pop(context); //pop dialog
+
       await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
       setState(() => isPerformingRequest = false);
     }
   }
 
-  setMood(newMood) {
+  void setMood(newMood) {
     setState(() => mood = newMood);
 
     // Get last visible listItem (clean array after)
@@ -287,58 +300,79 @@ class _HomePageState extends State<HomePage> {
     int lastItem = 0;
     _keys.forEach((index, key) {
       var itemRect = RectGetter.getRectFromKey(key);
-      if (itemRect != null && !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) && index > lastItem) lastItem = index;
+      if (itemRect != null &&
+          !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
+          index > lastItem) lastItem = index;
     });
 
     // Remove last visible+10 itens em fetch again
-    if (imgs != null && imgs.length > lastItem+10) {
-      imgs.removeRange(lastItem+10, imgs.length);
+    if (imgs != null && imgs.length != null && imgs.length > lastItem + 10) {
+      imgs.removeRange(lastItem + 10, imgs.length);
     }
     fetchGifs();
   }
 
-  setSource(newSource) {
+  void setSource(newSource) {
     setState(() => source = newSource);
     fetchGifs();
   }
 
-  fetchGifs() async {
-
-    if (!isPerformingRequest) {
-      setState(() => isPerformingRequest = true);
-
-      if (source == "tenor") {
-        
-        mood = mood.split('+')[0];
-        var endpoint = 'https://api.tenor.com/v1/random?q=${mood}&key=LIVDSRZULELA&limit=20&media_filter=minimal&contentfilter=off&anon_id=3a76e56901d740da9e59ffb22b988242';
-        final response = await http.get(endpoint);
-        if (response.statusCode == 200) {
-          List results = json.decode(response.body)['results'];
-
-          for (var i = 0; i < results.length; i++) {
-            setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
-          }
-
-        } 
-
-      } else {
-        final gifs = await client.search(mood,
-          offset: 0,
-          limit: 100,
-          rating: GiphyRating.r,
-        );
-
-        if (gifs != null) {
-          for (var i = 0; i < gifs.data.length; i++) {
-            var url = gifs.data[i].images.original.url;
-
-            setState(() => imgs.add(url));
-          }
-        }
-      }
-
-       setState(() => isPerformingRequest = false);
+  Future<void> fetchGifs() async {
+    if (source == "giphy") {
+      fetchGifsFromGiphy();
+    } else {
+      fetchGifsFromTenor();
     }
 
+    // var endpoint = 'http://localhost:8888/gifs';
+    // final response = await http.get(endpoint);
+    // if (response.statusCode == 200) {
+    //   List results = json.decode(response.body)['results'];
+
+    //   print(results);
+    // }
+  }
+
+  Future<void> fetchGifsFromGiphy() async {
+    // if (!isPerformingRequest) {
+    setState(() => isPerformingRequest = true);
+    print("Getting $mood from giphy:");
+    final gifs = await client.search(
+      mood,
+      offset: 0,
+      limit: 50,
+      rating: GiphyRating.r,
+    );
+
+    if (gifs != null) {
+      for (var i = 0; i < gifs.data.length; i++) {
+        var url = gifs.data[i].images.original.url;
+
+        setState(() => imgs.add(url));
+      }
+    }
+    // }
+
+    setState(() => isPerformingRequest = false);
+  }
+
+  Future<void> fetchGifsFromTenor() async {
+    // if (!isPerformingRequest) {
+    setState(() => isPerformingRequest = true);
+    print("Getting $mood from tenor");
+    mood = mood.split('+')[0];
+    var endpoint =
+        'https://api.tenor.com/v1/random?q=$mood&key=LIVDSRZULELA&limit=20&media_filter=minimal&contentfilter=off&anon_id=3a76e56901d740da9e59ffb22b988242';
+    final response = await http.get(endpoint);
+    if (response.statusCode == 200) {
+      List results = json.decode(response.body)['results'];
+
+      for (var i = 0; i < results.length; i++) {
+        setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
+      }
+    }
+
+    setState(() => isPerformingRequest = false);
+    // }
   }
 }
