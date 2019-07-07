@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:core';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -11,7 +12,11 @@ import 'package:rect_getter/rect_getter.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
 import 'package:giphy_client/giphy_client.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:transparent_image/transparent_image.dart';
 
+const BACKEND_DEV = "http://192.168.15.13:5000/gifzcroll/us-central1";
+const BACKEND_PROD = "https://us-central1-gifzcroll.cloudfunctions.net";
+const BACKEND = BACKEND_PROD;
 
 void main() => runApp(Gifzcroll());
 
@@ -28,6 +33,18 @@ class Gifzcroll extends StatelessWidget {
   }
 }
 
+class Gif {
+  String url;
+  bool isFav;
+  String favId;
+
+  Gif(String url, bool isFav, String favId) {
+    this.url = url;
+    this.isFav = isFav; 
+    this.favId = favId;
+  }
+}
+
 class HomePage extends StatefulWidget {
   HomePage({Key key}) : super(key: key);
 
@@ -36,12 +53,11 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<String> imgs = new List();
+  List<Gif> imgs = new List();
   ScrollController _scrollController;
   bool isPerformingRequest = false;
   bool isSharing = false;
   String mood = "funny";
-  String source = "tenor";
   var listViewKey = RectGetter.createGlobalKey();
   var _keys = {};
   final client = new GiphyClient(apiKey: 'dc6zaTOxFJmzC');
@@ -56,11 +72,22 @@ class _HomePageState extends State<HomePage> {
     fetchGifs();
 
     _scrollController.addListener(() {
-      if (!isPerformingRequest &&
-          (_scrollController.position.maxScrollExtent -
-                  _scrollController.position.pixels) <
-              1500) {
-        fetchGifs();
+      if (!isPerformingRequest) {
+        // // Get last visible listItem
+        var rect = RectGetter.getRectFromKey(listViewKey);
+        int lastItem = 0;
+        _keys.forEach((index, key) {
+          var itemRect = RectGetter.getRectFromKey(key);
+          if (itemRect != null &&
+              !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
+              index > lastItem) lastItem = index;
+        });
+
+        if ((imgs.length - lastItem) < 10) {
+          var diff = imgs.length - lastItem;
+          print("Pegando mais $diff");
+          fetchGifs();
+        }
       }
     });
   }
@@ -83,7 +110,8 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
+  
+  bool notNull(Object o) => o != null;
   Widget buildBody() {
     return RectGetter(
       key: listViewKey,
@@ -104,19 +132,43 @@ class _HomePageState extends State<HomePage> {
               child: Container(
                 child: GestureDetector(
                   onTap: () {
-                    shareGif(imgs[index]);
+                    print('tap');
+                    shareGif(imgs[index].url);
                   },
-                  // child: FadeInImage.memoryNetwork(
-                  //   fadeInDuration: Duration(milliseconds: 0),
-                  //   placeholder: kTransparentImage,
-                  //   image: imgs[index], fit: BoxFit.fitWidth
-                  // ),
-                  child: CachedNetworkImage(
-                      // placeholder: (context, url) => new Placeholder(),
-                      imageUrl: imgs[index],
-                      fit: BoxFit.fitWidth),
+                  onDoubleTap: () {
+                    print('double tap');
+                    if (imgs[index].isFav) {
+                      print('unfaving '+imgs[index].favId);
+                      unfavGif(imgs[index].favId);
+                    } else {
+                      print('faving '+imgs[index].url);
+                      favGif(imgs[index].url);
+                    }
+                  },
+                  child: new Stack(
+                    fit: StackFit.passthrough,
+                    children: <Widget>[
+                  
+                      // new FadeInImage.memoryNetwork(
+                      //   fadeInDuration: Duration(milliseconds: 0),
+                      //   placeholder: kTransparentImage,
+                      //   image: imgs[index].url, fit: BoxFit.fitWidth
+                      // ),
+                  
+                      new CachedNetworkImage(
+                        imageUrl: imgs[index].url,
+                        fit: BoxFit.fitWidth,
+                      ),
+                  
+                      imgs[index].isFav ? new Positioned(
+                        right: -1.0,
+                        top: 2.0,
+                        child: new Icon(Icons.favorite, color: Colors.red),
+                      ) : new Container()     
+                    ]
                 ),
               ),
+            ),
             );
           }
         },
@@ -136,35 +188,40 @@ class _HomePageState extends State<HomePage> {
           curve: Curves.bounceIn,
           children: [
             SpeedDialChild(
+              child: Icon(Icons.favorite, color: Colors.white),
+              backgroundColor: Colors.black,
+              onTap: () => fetchFavs()
+            ),
+            SpeedDialChild(
               child: Icon(Icons.accessibility_new, color: Colors.white),
               backgroundColor: Colors.black,
-              onTap: () => setMood("excited+funny"),
+              onTap: () => setMood("excited"),
             ),
             SpeedDialChild(
               child: Icon(
                   CustomIcons.iconfinder_middle_finger_gesture_fuck_339875,
                   color: Colors.white),
               backgroundColor: Colors.black,
-              onTap: () => setMood("fuck+funny"),
+              onTap: () => setMood("fuck"),
             ),
             SpeedDialChild(
                 child: Icon(Icons.beach_access, color: Colors.white),
                 backgroundColor: Colors.black,
-                onTap: () => setMood("beach+funny")),
+                onTap: () => setMood("beach")),
             SpeedDialChild(
               child: Icon(Icons.audiotrack, color: Colors.white),
               backgroundColor: Colors.black,
-              onTap: () => setMood("dance+funny"),
+              onTap: () => setMood("dance"),
             ),
             SpeedDialChild(
               child: Icon(Icons.child_care, color: Colors.white),
               backgroundColor: Colors.black,
-              onTap: () => setMood("kids+funny"),
+              onTap: () => setMood("kids"),
             ),
             SpeedDialChild(
               child: Icon(Icons.directions_bike, color: Colors.white),
               backgroundColor: Colors.black,
-              onTap: () => setMood("bikes+funny"),
+              onTap: () => setMood("bikes"),
             ),
             SpeedDialChild(
               child: Icon(Icons.add, color: Colors.white),
@@ -175,48 +232,12 @@ class _HomePageState extends State<HomePage> {
         ));
   }
 
-  Widget buildSpeedDialSource() {
-    return Opacity(
-        opacity: 0.8,
-        child: new SpeedDial(
-          animatedIcon: AnimatedIcons.view_list,
-          overlayColor: Colors.black,
-          overlayOpacity: 0.3,
-          marginRight: 80,
-          backgroundColor: Colors.black,
-          visible: true,
-          curve: Curves.bounceIn,
-          children: [
-            SpeedDialChild(
-              label: "giphy",
-              backgroundColor: Colors.black,
-              onTap: () => setSource("giphy"),
-            ),
-            SpeedDialChild(
-              label: "tenor",
-              backgroundColor: Colors.black,
-              onTap: () => setSource("tenor"),
-            ),
-          ],
-        ));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         body: buildBody(),
-        floatingActionButton: Stack(
-          children: <Widget>[
-            Align(
-              alignment: Alignment.bottomLeft,
-              child: buildSpeedDialMood(),
-            ),
-            Align(
-              alignment: Alignment.bottomRight,
-              child: buildSpeedDialSource(),
-            ),
-          ],
-        ));
+        floatingActionButton: buildSpeedDialMood(),
+    );
   }
 
   Widget textOverlay() {
@@ -269,8 +290,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> shareGif(url) async {
     if (!isSharing) {
-
-      setState(() => isPerformingRequest = true);
+      setState(() => isSharing = true);
 
       showDialog (
         context: context,
@@ -280,99 +300,130 @@ class _HomePageState extends State<HomePage> {
           ),
       );
   
-      
       var request = await HttpClient().getUrl(Uri.parse(url));
       var response = await request.close();
       Uint8List bytes = await consolidateHttpClientResponseBytes(response);
 
-       Navigator.pop(context); //pop dialog
+      Navigator.pop(context); //pop dialog
 
       await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
-      setState(() => isPerformingRequest = false);
+      
+      setState(() => isSharing = false);
+    }
+  }
+
+  Future<void> favGif(url) async {
+    if (!isSharing) {
+      setState(() => isSharing = true);
+
+      showDialog (
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => new Center(
+          child: Icon(
+                  Icons.favorite,
+                  size: 100.0,
+                  color: Colors.red),
+          ),
+      );
+  
+      await http.get("$BACKEND_PROD/fav?url=$url");
+
+      Navigator.pop(context); //pop dialog
+
+      // await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
+      
+      setState(() => isSharing = false);
+    }
+  }
+
+    Future<void> unfavGif(id) async {
+    if (!isSharing) {
+      setState(() => isSharing = true);
+
+      showDialog (
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => new Center(
+          child: Icon(
+                  Icons.favorite_border,
+                  size: 100.0,
+                  color: Colors.red),
+          ),
+      );
+  
+      await http.get("$BACKEND_PROD/unfav?id=$id");
+
+      Navigator.pop(context); //pop dialog
+      
+      setState(() => isSharing = false);
     }
   }
 
   void setMood(newMood) {
     setState(() => mood = newMood);
 
-    // Get last visible listItem (clean array after)
-    var rect = RectGetter.getRectFromKey(listViewKey);
-    int lastItem = 0;
-    _keys.forEach((index, key) {
-      var itemRect = RectGetter.getRectFromKey(key);
-      if (itemRect != null &&
-          !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
-          index > lastItem) lastItem = index;
-    });
+    // // Get last visible listItem (clean array after)
+    // var rect = RectGetter.getRectFromKey(listViewKey);
+    // int lastItem = 0;
+    // _keys.forEach((index, key) {
+    //   var itemRect = RectGetter.getRectFromKey(key);
+    //   if (itemRect != null &&
+    //       !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
+    //       index > lastItem) lastItem = index;
+    // });
 
     // Remove last visible+10 itens em fetch again
-    if (imgs != null && imgs.length != null && imgs.length > lastItem + 10) {
-      imgs.removeRange(lastItem + 10, imgs.length);
-    }
-    fetchGifs();
+    // if (imgs != null && imgs.length != null && imgs.length > lastItem + 10) {
+    //   imgs.removeRange(lastItem + 10, imgs.length);
+    // }
+    // fetchGifs();
   }
 
-  void setSource(newSource) {
-    setState(() => source = newSource);
-    fetchGifs();
+  Future<void> fetchFavs() async {
+    
+    if (!isPerformingRequest) {
+      setState(() => isPerformingRequest = true);
+      
+      imgs.removeRange(0, imgs.length);
+      
+      // mood = mood.split('+')[0];
+      print("Getting favs");
+      final response = await http.get("$BACKEND_PROD/favs");
+
+      if (response.statusCode == 200) {
+        print(response.body);
+        List results = json.decode(response.body);
+        for (var i = 0; i < results.length; i++) {
+          Gif gif = new Gif(results[i]['url'], true, results[i]['id']);
+          imgs.add(gif);
+        }
+      }
+
+      setState(() => isPerformingRequest = false);
+    }
   }
 
   Future<void> fetchGifs() async {
-    if (source == "giphy") {
-      fetchGifsFromGiphy();
-    } else {
-      fetchGifsFromTenor();
-    }
+    
+    if (!isPerformingRequest) {
+      setState(() => isPerformingRequest = true);
+      
+      // mood = mood.split('+')[0];
+      print("Getting $mood");
+      final response = await http.get("$BACKEND/gifzMood?mood=$mood");
 
-    // var endpoint = 'http://localhost:8888/gifs';
-    // final response = await http.get(endpoint);
-    // if (response.statusCode == 200) {
-    //   List results = json.decode(response.body)['results'];
-
-    //   print(results);
-    // }
-  }
-
-  Future<void> fetchGifsFromGiphy() async {
-    // if (!isPerformingRequest) {
-    setState(() => isPerformingRequest = true);
-    print("Getting $mood from giphy:");
-    final gifs = await client.search(
-      mood,
-      offset: 0,
-      limit: 50,
-      rating: GiphyRating.r,
-    );
-
-    if (gifs != null) {
-      for (var i = 0; i < gifs.data.length; i++) {
-        var url = gifs.data[i].images.original.url;
-
-        setState(() => imgs.add(url));
+      if (response.statusCode == 200) {
+        print(response.body);
+        List results = json.decode(response.body);
+        for (var i = 0; i < results.length; i++) {
+          // setState(() => imgs.add(results[i]));
+          Gif gif = new Gif(results[i], false, null);
+          imgs.add(gif);
+        }
       }
+
+      setState(() => isPerformingRequest = false);
     }
-    // }
-
-    setState(() => isPerformingRequest = false);
-  }
-
-  Future<void> fetchGifsFromTenor() async {
-    // if (!isPerformingRequest) {
-    setState(() => isPerformingRequest = true);
-    print("Getting $mood from tenor");
-    mood = mood.split('+')[0];
-    var endpoint =
-        'https://api.tenor.com/v1/random?q=$mood&key=LIVDSRZULELA&limit=20&media_filter=minimal&contentfilter=off&anon_id=3a76e56901d740da9e59ffb22b988242';
-    final response = await http.get(endpoint);
-    if (response.statusCode == 200) {
-      List results = json.decode(response.body)['results'];
-
-      for (var i = 0; i < results.length; i++) {
-        setState(() => imgs.add(results[i]['media'][0]['gif']['url']));
-      }
-    }
-
-    setState(() => isPerformingRequest = false);
-    // }
   }
 }
