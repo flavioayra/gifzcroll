@@ -3,7 +3,6 @@ import 'dart:core';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:my_app/custom_icons_icons.dart';
@@ -126,30 +125,40 @@ class _HomePageState extends State<HomePage> {
           } else {
             return RectGetter(
               key: _keys[index],
-              child: Container(
-                child: GestureDetector(
-                  onTap: () {
-                    print('sharing ' + imgs[index].url);
-                    shareGif(imgs[index].url);
-                  },
-                  onDoubleTap: () async {
-                    if (imgs[index].isFav) {
-                      print('unfaving ' + imgs[index].favId);
-                      unfavGif(imgs[index].favId);
-                      setState(() {
-                        imgs[index].favId = null;
-                        imgs[index].isFav = false;
-                      });
-                    } else {
-                      print('faving ' + imgs[index].url);
+              // child: Container(
+              child: GestureDetector(
+                onTap: () {
+                  print('sharing ' + imgs[index].url);
+                  shareGif(imgs[index].url);
+                },
+                onDoubleTap: () async {
+                  if (imgs[index].isFav) {
+                    print('unfaving ' + imgs[index].favId);
+                    unfavGif(imgs[index].favId);
+                    setState(() {
+                      imgs[index].favId = null;
+                      imgs[index].isFav = false;
+                    });
+                  } else {
+                    print('faving ' + imgs[index].url);
 
-                      String docId = await favGif(imgs[index].url);
-                      setState(() {
-                        imgs[index].favId = docId;
-                        imgs[index].isFav = true;
-                      });
-                    }
-                  },
+                    String docId = await favGif(imgs[index].url);
+                    setState(() {
+                      imgs[index].favId = docId;
+                      imgs[index].isFav = true;
+                    });
+                  }
+                },
+                child: new Card(
+                  margin: EdgeInsets.fromLTRB(6, 6, 6, 0),
+                  shape: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(5.0)),
+                  ),
+                  color: Colors.grey[300],
+                  borderOnForeground: false,
+                  elevation: 10,
+                  semanticContainer: true,
+                  clipBehavior: Clip.antiAlias,
                   child:
                       new Stack(fit: StackFit.passthrough, children: <Widget>[
                     // new FadeInImage.memoryNetwork(
@@ -160,20 +169,21 @@ class _HomePageState extends State<HomePage> {
 
                     new CachedNetworkImage(
                       imageUrl: imgs[index].url,
-                      fit: BoxFit.fitWidth,
+                      fit: BoxFit.cover,
                     ),
 
                     // fav icon
                     imgs[index].isFav
                         ? new Positioned(
-                            left: -1.0,
-                            top: 2.0,
+                            left: 3.0,
+                            top: 3.0,
                             child: new Icon(Icons.favorite, color: Colors.red),
                           )
                         : new Container()
                   ]),
                 ),
               ),
+              // ),
             );
           }
         },
