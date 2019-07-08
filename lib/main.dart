@@ -10,9 +10,8 @@ import 'package:my_app/custom_icons_icons.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:rect_getter/rect_getter.dart';
 import 'package:esys_flutter_share/esys_flutter_share.dart';
-import 'package:giphy_client/giphy_client.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:transparent_image/transparent_image.dart';
+// import 'package:transparent_image/transparent_image.dart';
 
 const BACKEND_DEV = "http://192.168.15.13:5000/gifzcroll/us-central1";
 const BACKEND_PROD = "https://us-central1-gifzcroll.cloudfunctions.net";
@@ -24,7 +23,7 @@ class Gifzcroll extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // hide status bar
-    SystemChrome.setEnabledSystemUIOverlays([]);
+    // SystemChrome.setEnabledSystemUIOverlays([]);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -40,7 +39,7 @@ class Gif {
 
   Gif(String url, bool isFav, String favId) {
     this.url = url;
-    this.isFav = isFav; 
+    this.isFav = isFav;
     this.favId = favId;
   }
 }
@@ -60,7 +59,6 @@ class _HomePageState extends State<HomePage> {
   String mood = "funny";
   var listViewKey = RectGetter.createGlobalKey();
   var _keys = {};
-  final client = new GiphyClient(apiKey: 'dc6zaTOxFJmzC');
   final FocusScopeNode _focusScopeNode = new FocusScopeNode();
   OverlayEntry moodTextBox;
 
@@ -110,14 +108,13 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  
-  bool notNull(Object o) => o != null;
+
   Widget buildBody() {
     return RectGetter(
       key: listViewKey,
       child: ListView.builder(
         // FUCK YOU STATUS BAR
-        padding: EdgeInsets.zero,
+        // padding: EdgeInsets.zero,
 
         controller: _scrollController,
         itemCount: imgs.length,
@@ -132,43 +129,51 @@ class _HomePageState extends State<HomePage> {
               child: Container(
                 child: GestureDetector(
                   onTap: () {
-                    print('tap');
+                    print('sharing ' + imgs[index].url);
                     shareGif(imgs[index].url);
                   },
-                  onDoubleTap: () {
-                    print('double tap');
+                  onDoubleTap: () async {
                     if (imgs[index].isFav) {
-                      print('unfaving '+imgs[index].favId);
+                      print('unfaving ' + imgs[index].favId);
                       unfavGif(imgs[index].favId);
+                      setState(() {
+                        imgs[index].favId = null;
+                        imgs[index].isFav = false;
+                      });
                     } else {
-                      print('faving '+imgs[index].url);
-                      favGif(imgs[index].url);
+                      print('faving ' + imgs[index].url);
+
+                      String docId = await favGif(imgs[index].url);
+                      setState(() {
+                        imgs[index].favId = docId;
+                        imgs[index].isFav = true;
+                      });
                     }
                   },
-                  child: new Stack(
-                    fit: StackFit.passthrough,
-                    children: <Widget>[
-                  
-                      // new FadeInImage.memoryNetwork(
-                      //   fadeInDuration: Duration(milliseconds: 0),
-                      //   placeholder: kTransparentImage,
-                      //   image: imgs[index].url, fit: BoxFit.fitWidth
-                      // ),
-                  
-                      new CachedNetworkImage(
-                        imageUrl: imgs[index].url,
-                        fit: BoxFit.fitWidth,
-                      ),
-                  
-                      imgs[index].isFav ? new Positioned(
-                        right: -1.0,
-                        top: 2.0,
-                        child: new Icon(Icons.favorite, color: Colors.red),
-                      ) : new Container()     
-                    ]
+                  child:
+                      new Stack(fit: StackFit.passthrough, children: <Widget>[
+                    // new FadeInImage.memoryNetwork(
+                    //   fadeInDuration: Duration(milliseconds: 0),
+                    //   placeholder: kTransparentImage,
+                    //   image: imgs[index].url, fit: BoxFit.fitWidth
+                    // ),
+
+                    new CachedNetworkImage(
+                      imageUrl: imgs[index].url,
+                      fit: BoxFit.fitWidth,
+                    ),
+
+                    // fav icon
+                    imgs[index].isFav
+                        ? new Positioned(
+                            left: -1.0,
+                            top: 2.0,
+                            child: new Icon(Icons.favorite, color: Colors.red),
+                          )
+                        : new Container()
+                  ]),
                 ),
               ),
-            ),
             );
           }
         },
@@ -187,11 +192,10 @@ class _HomePageState extends State<HomePage> {
           visible: true,
           curve: Curves.bounceIn,
           children: [
-            SpeedDialChild(
-              child: Icon(Icons.favorite, color: Colors.white),
-              backgroundColor: Colors.black,
-              onTap: () => fetchFavs()
-            ),
+            // SpeedDialChild(
+            //     child: Icon(Icons.favorite, color: Colors.white),
+            //     backgroundColor: Colors.black,
+            //     onTap: () => fetchFavs()),
             SpeedDialChild(
               child: Icon(Icons.accessibility_new, color: Colors.white),
               backgroundColor: Colors.black,
@@ -226,7 +230,7 @@ class _HomePageState extends State<HomePage> {
             SpeedDialChild(
               child: Icon(Icons.add, color: Colors.white),
               backgroundColor: Colors.black,
-              onTap: () => showMoodText(),
+              onTap: () => buildMoodText(),
             ),
           ],
         ));
@@ -235,8 +239,23 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: buildBody(),
-        floatingActionButton: buildSpeedDialMood(),
+      appBar: AppBar(
+        title: const Text("Gifzcroll"),
+        backgroundColor: Colors.black,
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(
+              Icons.favorite,
+              color: Colors.red,
+            ),
+            onPressed: () {
+              fetchFavs();
+            },
+          )
+        ],
+      ),
+      body: buildBody(),
+      floatingActionButton: buildSpeedDialMood(),
     );
   }
 
@@ -273,7 +292,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void showMoodText() {
+  void buildMoodText() {
     if (moodTextBox == null) {
       moodTextBox =
           new OverlayEntry(builder: (BuildContext context) => textOverlay());
@@ -290,16 +309,17 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> shareGif(url) async {
     if (!isSharing) {
-      setState(() => isSharing = true);
+      //setState(() => isSharing = true);
+      isSharing = true;
 
-      showDialog (
+      showDialog(
         context: context,
         barrierDismissible: false,
         builder: (_) => new Center(
-          child: new CircularProgressIndicator(),
-          ),
+              child: new CircularProgressIndicator(),
+            ),
       );
-  
+
       var request = await HttpClient().getUrl(Uri.parse(url));
       var response = await request.close();
       Uint8List bytes = await consolidateHttpClientResponseBytes(response);
@@ -307,97 +327,112 @@ class _HomePageState extends State<HomePage> {
       Navigator.pop(context); //pop dialog
 
       await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
-      
-      setState(() => isSharing = false);
+
+      // setState(() => isSharing = false);
+      isSharing = false;
     }
   }
 
-  Future<void> favGif(url) async {
-    if (!isSharing) {
-      setState(() => isSharing = true);
-
-      showDialog (
-        context: context,
+  Future<String> favGif(url) async {
+    showGeneralDialog(
+        // barrierColor: Colors.black.withOpacity(0.5),
+        transitionBuilder: (context, a1, a2, widget) {
+          return Transform.scale(
+            scale: a1.value,
+            child: Opacity(
+              opacity: a1.value,
+              child: new Center(
+                child: Icon(Icons.favorite, size: 100.0, color: Colors.red),
+              ),
+            ),
+          );
+        },
+        transitionDuration: Duration(milliseconds: 100),
         barrierDismissible: false,
-        builder: (_) => new Center(
-          child: Icon(
-                  Icons.favorite,
-                  size: 100.0,
-                  color: Colors.red),
-          ),
-      );
-  
-      await http.get("$BACKEND_PROD/fav?url=$url");
+        barrierLabel: '',
+        context: context,
+        pageBuilder: (context, animation1, animation2) {});
 
-      Navigator.pop(context); //pop dialog
+    final response = await http.get("$BACKEND_PROD/fav?url=$url");
 
-      // await Share.file('gifz', 'gifzcroll.gif', bytes, 'image/gif');
-      
-      setState(() => isSharing = false);
+    Navigator.pop(context); //pop dialog
+
+    String docId;
+    if (response.statusCode == 200) {
+      docId = response.body;
     }
+
+    print(docId);
+    return docId;
   }
 
-    Future<void> unfavGif(id) async {
+  Future<void> unfavGif(id) async {
     if (!isSharing) {
-      setState(() => isSharing = true);
+      // setState(() => isSharing = true);
+      isSharing = true;
 
-      showDialog (
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => new Center(
-          child: Icon(
-                  Icons.favorite_border,
-                  size: 100.0,
-                  color: Colors.red),
-          ),
-      );
-  
+      showGeneralDialog(
+          // barrierColor: Colors.black.withOpacity(0.5),
+          transitionBuilder: (context, a1, a2, widget) {
+            return Transform.scale(
+              scale: a1.value,
+              child: Opacity(
+                opacity: a1.value,
+                child: new Center(
+                  child: Icon(Icons.favorite_border,
+                      size: 100.0, color: Colors.red),
+                ),
+              ),
+            );
+          },
+          transitionDuration: Duration(milliseconds: 100),
+          barrierDismissible: false,
+          barrierLabel: '',
+          context: context,
+          pageBuilder: (context, animation1, animation2) {});
+
       await http.get("$BACKEND_PROD/unfav?id=$id");
 
       Navigator.pop(context); //pop dialog
-      
-      setState(() => isSharing = false);
+
+      isSharing = false;
     }
   }
 
+  int lastVisibleGif() {
+    var rect = RectGetter.getRectFromKey(listViewKey);
+    int lastItem = 0;
+
+    _keys.forEach((index, key) {
+      var itemRect = RectGetter.getRectFromKey(key);
+      if (itemRect != null &&
+          !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
+          index > lastItem) lastItem = index;
+    });
+
+    return lastItem - 1;
+  }
+
   void setMood(newMood) {
-    setState(() => mood = newMood);
-
-    // // Get last visible listItem (clean array after)
-    // var rect = RectGetter.getRectFromKey(listViewKey);
-    // int lastItem = 0;
-    // _keys.forEach((index, key) {
-    //   var itemRect = RectGetter.getRectFromKey(key);
-    //   if (itemRect != null &&
-    //       !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
-    //       index > lastItem) lastItem = index;
-    // });
-
-    // Remove last visible+10 itens em fetch again
-    // if (imgs != null && imgs.length != null && imgs.length > lastItem + 10) {
-    //   imgs.removeRange(lastItem + 10, imgs.length);
-    // }
-    // fetchGifs();
+    mood = newMood;
   }
 
   Future<void> fetchFavs() async {
-    
+    List<Gif> favs = [];
+
     if (!isPerformingRequest) {
       setState(() => isPerformingRequest = true);
-      
-      imgs.removeRange(0, imgs.length);
-      
-      // mood = mood.split('+')[0];
+
       print("Getting favs");
       final response = await http.get("$BACKEND_PROD/favs");
 
       if (response.statusCode == 200) {
-        print(response.body);
-        List results = json.decode(response.body);
-        for (var i = 0; i < results.length; i++) {
-          Gif gif = new Gif(results[i]['url'], true, results[i]['id']);
-          imgs.add(gif);
-        }
+        json.decode(response.body).forEach((r) {
+          favs.add(new Gif(r['url'], true, r['id']));
+        });
+
+        // Insert before the last visible item
+        imgs.insertAll(lastVisibleGif(), favs.asMap().values);
       }
 
       setState(() => isPerformingRequest = false);
@@ -405,22 +440,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> fetchGifs() async {
-    
     if (!isPerformingRequest) {
       setState(() => isPerformingRequest = true);
-      
-      // mood = mood.split('+')[0];
+
       print("Getting $mood");
       final response = await http.get("$BACKEND/gifzMood?mood=$mood");
 
       if (response.statusCode == 200) {
-        print(response.body);
-        List results = json.decode(response.body);
-        for (var i = 0; i < results.length; i++) {
-          // setState(() => imgs.add(results[i]));
-          Gif gif = new Gif(results[i], false, null);
-          imgs.add(gif);
-        }
+        json.decode(response.body).forEach((r) {
+          imgs.add(new Gif(r, false, null));
+        });
       }
 
       setState(() => isPerformingRequest = false);
