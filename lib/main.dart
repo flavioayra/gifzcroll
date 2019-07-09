@@ -22,7 +22,7 @@ class Gifzcroll extends StatelessWidget {
   }
 }
 
-// HOME PAGE
+//////////////////////// FAVS PAGE ////////////////////////
 class FavsPage extends StatefulWidget {
   FavsPage({Key key}) : super(key: key);
 
@@ -104,7 +104,7 @@ class _FavsPageState extends State<FavsPage> {
   }
 }
 
-// HOME PAGE
+//////////////////////// HOME PAGE ////////////////////////
 class HomePage extends StatefulWidget {
   HomePage({Key key}) : super(key: key);
 
@@ -116,9 +116,7 @@ class _HomePageState extends State<HomePage> {
   List<Gif> imgs = [];
   ScrollController _scrollController;
   bool isPerformingRequest = false;
-  bool isSharing = false;
   String mood = "funny";
-  final FocusScopeNode _focusScopeNode = new FocusScopeNode();
   OverlayEntry moodTextBox;
 
   _getMoreData() async {
@@ -148,25 +146,6 @@ class _HomePageState extends State<HomePage> {
         });
       }
     });
-    // _scrollController.addListener(() {
-    //   if (!isPerformingRequest) {
-    //     // // Get last visible listItem
-    //     var rect = RectGetter.getRectFromKey(listViewKey);
-    //     int lastItem = 0;
-    //     _keys.forEach((index, key) {
-    //       var itemRect = RectGetter.getRectFromKey(key);
-    //       if (itemRect != null &&
-    //           !(itemRect.top > rect.bottom || itemRect.bottom < rect.top) &&
-    //           index > lastItem) lastItem = index;
-    //     });
-
-    //     if ((imgs.length - lastItem) < 10) {
-    //       var diff = imgs.length - lastItem;
-    //       print("Pegando mais $diff");
-    //       imgs = fetchGifs(mood);
-    //     }
-    //   }
-    // });
   }
 
   @override
@@ -202,7 +181,7 @@ class _HomePageState extends State<HomePage> {
             return GestureDetector(
               onTap: () {
                 print('sharing ' + imgs[index].url);
-                shareGif(context, imgs[index].url, isSharing);
+                shareGif(context, imgs[index].url, isPerformingRequest);
               },
               onDoubleTap: () async {
                 if (imgs[index].isFav) {
@@ -236,13 +215,6 @@ class _HomePageState extends State<HomePage> {
                         placeholder: kTransparentImage,
                         image: imgs[index].url,
                         fit: BoxFit.fitWidth),
-
-                    // new CachedNetworkImage(
-                    //   imageUrl: imgs[index].url,
-                    //   fit: BoxFit.cover,
-                    // ),
-
-                    // fav icon
                     imgs[index].isFav
                         ? new Positioned(
                             left: 3.0,
@@ -260,6 +232,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+//////////////////////// UTILS WIDGETS ////////////////////////
   Widget _buildProgressIndicator() {
     return new Padding(
       padding: const EdgeInsets.all(8.0),
@@ -283,10 +256,6 @@ class _HomePageState extends State<HomePage> {
           visible: true,
           curve: Curves.bounceIn,
           children: [
-            // SpeedDialChild(
-            //     child: Icon(Icons.favorite, color: Colors.white),
-            //     backgroundColor: Colors.black,
-            //     onTap: () => fetchFavs()),
             SpeedDialChild(
               child: Icon(Icons.accessibility_new, color: Colors.white),
               backgroundColor: Colors.black,
@@ -331,30 +300,27 @@ class _HomePageState extends State<HomePage> {
     return Center(
       child: Container(
         constraints: BoxConstraints(maxWidth: 200, maxHeight: 200),
-        child: FocusScope(
-          node: _focusScopeNode,
-          child: Builder(
-            builder: (BuildContext context) {
-              return Material(
-                type: MaterialType.canvas,
-                child: TextField(
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: 'What do you wanna see?',
-                    fillColor: Colors.black,
-                    filled: true,
-                    border: new OutlineInputBorder(
-                      borderSide: new BorderSide(),
-                    ),
+        child: Builder(
+          builder: (BuildContext context) {
+            return Material(
+              type: MaterialType.canvas,
+              child: TextField(
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: 'What do you wanna see?',
+                  fillColor: Colors.black,
+                  filled: true,
+                  border: new OutlineInputBorder(
+                    borderSide: new BorderSide(),
                   ),
-                  style: new TextStyle(
-                    color: Colors.white,
-                  ),
-                  onSubmitted: setMoodFromText,
                 ),
-              );
-            },
-          ),
+                style: new TextStyle(
+                  color: Colors.white,
+                ),
+                onSubmitted: setMoodFromText,
+              ),
+            );
+          },
         ),
       ),
     );
